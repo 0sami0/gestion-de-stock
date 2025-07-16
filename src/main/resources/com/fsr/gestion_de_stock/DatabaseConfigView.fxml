@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="15.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.fsr.gestion_de_stock.DatabaseConfigViewController">
+    <padding><Insets bottom="20" left="20" right="20" top="20" /></padding>
+    <Label text="Configuration de la Base de Données">
+        <font><Font name="System Bold" size="18.0" /></font>
+    </Label>
+    <Label text="Impossible de se connecter à la base de données. Veuillez vérifier les paramètres." textFill="red" wrapText="true" />
+    <GridPane hgap="10" vgap="10">
+        <Label text="Hôte (IP/Nom):" GridPane.rowIndex="0" />
+        <TextField fx:id="hostField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+        <Label text="Port:" GridPane.rowIndex="1" />
+        <TextField fx:id="portField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+        <Label text="Nom de la base:" GridPane.rowIndex="2" />
+        <TextField fx:id="nameField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+        <Label text="Utilisateur:" GridPane.rowIndex="3" />
+        <TextField fx:id="userField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+        <Label text="Mot de passe:" GridPane.rowIndex="4" />
+        <PasswordField fx:id="passField" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+    </GridPane>
+    <Button onAction="#handleSaveAndRestart" text="Enregistrer et Essayer à Nouveau" />
+</VBox>
