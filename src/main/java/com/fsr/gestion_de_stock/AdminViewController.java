@@ -3,9 +3,14 @@ package com.fsr.gestion_de_stock;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import org.controlsfx.control.CheckListView;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -19,10 +24,18 @@ public class AdminViewController {
     @FXML private Button deleteUserButton;
     @FXML private ListView<String> allRolesListView;
     @FXML private TextField newRoleField;
+    @FXML private MenuItem changePasswordMenuItem;
+    @FXML private MenuItem logoutMenuItem;
+    @FXML private MenuItem toggleThemeMenuItem;
 
     private UserDAO userDAO = new UserDAO();
     private ObservableList<User> userList = FXCollections.observableArrayList();
     private ObservableList<String> allRolesList = FXCollections.observableArrayList();
+    private User currentUser;
+
+    public void setCurrentUser(User user) {
+        this.currentUser = user;
+    }
 
     @FXML
     public void initialize() {
@@ -38,6 +51,11 @@ public class AdminViewController {
 
         updateUserButton.disableProperty().bind(userListView.getSelectionModel().selectedItemProperty().isNull());
         deleteUserButton.disableProperty().bind(userListView.getSelectionModel().selectedItemProperty().isNull());
+
+        changePasswordMenuItem.setOnAction(event -> handleChangePassword());
+        logoutMenuItem.setOnAction(event -> handleLogout());
+        toggleThemeMenuItem.setOnAction(event -> ThemeManager.toggleTheme(App.getConfigManager(), toggleThemeMenuItem));
+        ThemeManager.updateMenuItemText(toggleThemeMenuItem, App.getConfigManager());
     }
 
     private void loadData() {
@@ -120,7 +138,39 @@ public class AdminViewController {
         }
     }
 
+    private void handleChangePassword() {
+        if (currentUser == null) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("ChangePasswordView.fxml"));
+            Stage stage = new Stage();
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("Changer le Mot de Passe");
+            stage.setScene(new Scene(loader.load()));
+
+            ChangePasswordViewController controller = loader.getController();
+            controller.initData(currentUser);
+
+            stage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void handleLogout() {
+        try {
+            Stage currentStage = (Stage) userListView.getScene().getWindow();
+            currentStage.close();
+            new App().start(new Stage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void showAlert(String title, String message) {
-        new Alert(Alert.AlertType.ERROR, message).showAndWait();
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

@@ -33,6 +33,7 @@ public class ConfigManager {
         properties.setProperty("db.name", "gestion_stock_fsr");
         properties.setProperty("db.user", "root");
         properties.setProperty("db.pass", "");
+        properties.setProperty("app.theme", "light");
     }
 
     public String getProperty(String key) {

@@ -14,9 +14,8 @@ public class DatabaseConfigViewController {
     @FXML private PasswordField passField;
 
     private ConfigManager configManager;
-    private App app; // Reference to the main App class
+    private App app;
 
-    // A new method to link this controller back to the main app
     public void setApp(App app) {
         this.app = app;
     }
@@ -42,8 +41,7 @@ public class DatabaseConfigViewController {
 
         new Alert(Alert.AlertType.INFORMATION, "Configuration sauvegardée. Tentative de reconnexion...").showAndWait();
 
-        // This is the new, cleaner restart logic
-        DatabaseManager.closeConnection(); // Force the connection to close so it can be re-established
-        app.launch(); // Tell the main App class to try launching again
+        DatabaseManager.closeConnection();
+        app.launch();
     }
 }

@@ -13,8 +13,9 @@ public class StockItemView {
     private final SimpleStringProperty supplier;
     private final SimpleStringProperty observations;
     private final SimpleStringProperty purchaseOrderRef;
+    private final SimpleStringProperty category;
 
-    public StockItemView(int arrivalId, String inventoryNumber, String description, String affectation, String date, int quantity, String supplier, String observations, String purchaseOrderRef) {
+    public StockItemView(int arrivalId, String inventoryNumber, String description, String affectation, String date, int quantity, String supplier, String observations, String purchaseOrderRef, String category) {
         this.arrivalId = new SimpleIntegerProperty(arrivalId);
         this.inventoryNumber = new SimpleStringProperty(inventoryNumber);
         this.description = new SimpleStringProperty(description);
@@ -24,6 +25,7 @@ public class StockItemView {
         this.supplier = new SimpleStringProperty(supplier);
         this.observations = new SimpleStringProperty(observations);
         this.purchaseOrderRef = new SimpleStringProperty(purchaseOrderRef);
+        this.category = new SimpleStringProperty(category);
     }
 
     public int getArrivalId() { return arrivalId.get(); }
@@ -44,4 +46,6 @@ public class StockItemView {
     public SimpleStringProperty observationsProperty() { return observations; }
     public String getPurchaseOrderRef() { return purchaseOrderRef.get(); }
     public SimpleStringProperty purchaseOrderRefProperty() { return purchaseOrderRef; }
+    public String getCategory() { return category.get(); }
+    public SimpleStringProperty categoryProperty() { return category; }
 }

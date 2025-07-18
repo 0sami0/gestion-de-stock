@@ -73,14 +73,14 @@ public class DatabaseManager {
                 + " arrival_id INT NOT NULL,"
                 + " inventory_number VARCHAR(50) NOT NULL UNIQUE,"
                 + " serial_number VARCHAR(100),"
-                + " dispatch_id INT NULL," // Link to the dispatch event
+                + " dispatch_id INT NULL,"
                 + " status ENUM('In Stock', 'Dispatched', 'Reformed') NOT NULL,"
                 + " FOREIGN KEY (arrival_id) REFERENCES stock_arrivals(arrival_id),"
                 + " FOREIGN KEY (dispatch_id) REFERENCES dispatches(dispatch_id)"
                 + ") ENGINE=InnoDB;";
 
         try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
-            // THE DESTRUCTIVE 'DROP TABLE' LINES HAVE BEEN REMOVED
+
 
             stmt.execute(sqlSuppliers);
             stmt.execute(sqlDepartments);

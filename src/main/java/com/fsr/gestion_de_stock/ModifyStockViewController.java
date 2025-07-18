@@ -7,7 +7,6 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
-
 import java.sql.SQLException;
 
 public class ModifyStockViewController {
@@ -22,60 +21,56 @@ public class ModifyStockViewController {
     @FXML private TextField observationsField;
 
     private StockDAO stockDAO;
-    private StockArrival stockToModify;
+    private StockArrival currentArrival;
 
+    @FXML
     public void initialize() {
         stockDAO = new StockDAO();
-        supplierComboBox.setItems(FXCollections.observableArrayList(stockDAO.getAllSupplierNames()));
-        affectationComboBox.setItems(FXCollections.observableArrayList(stockDAO.getAllDepartmentNames()));
     }
 
-    public void loadStockData(StockArrival stock) {
-        this.stockToModify = stock;
+    public void initData(StockArrival arrival) {
+        this.currentArrival = arrival;
 
-        // Pre-fill the form with existing data
-        descriptionField.setText(stock.getDescription());
-        categoryField.setText(stock.getCategory());
-        datePicker.setValue(stock.getArrivalDate());
-        purchaseOrderField.setText(stock.getPurchaseOrderRef());
-        quantityField.setText(String.valueOf(stock.getInitialQuantity()));
-        supplierComboBox.setValue(stock.getSupplierName());
-        affectationComboBox.setValue(stock.getDepartmentName());
-        observationsField.setText(stock.getObservations());
+        descriptionField.setText(arrival.getDescription());
+        categoryField.setText(arrival.getCategory());
+        datePicker.setValue(arrival.getArrivalDate());
+        purchaseOrderField.setText(arrival.getPurchaseOrderRef());
+        quantityField.setText(String.valueOf(arrival.getInitialQuantity()));
+        observationsField.setText(arrival.getObservations());
+
+        supplierComboBox.setItems(FXCollections.observableArrayList(stockDAO.getAllSupplierNames()));
+        affectationComboBox.setItems(FXCollections.observableArrayList(stockDAO.getAllDepartmentNames()));
+
+        // These calls are now correct because the methods exist in StockArrival
+        supplierComboBox.setValue(stockDAO.getSupplierNameById(arrival.getSupplierId()));
+        affectationComboBox.setValue(stockDAO.getDepartmentNameById(arrival.getInitialDepartmentId()));
     }
 
     @FXML
     private void handleSave() {
-        if (descriptionField.getText() == null || descriptionField.getText().trim().isEmpty()) {
-            showAlert("Erreur", "La description est obligatoire.");
-            return;
-        }
-
         try {
-            stockToModify.setDescription(descriptionField.getText());
-            stockToModify.setArrivalDate(datePicker.getValue());
-            stockToModify.setPurchaseOrderRef(purchaseOrderField.getText());
-            stockToModify.setSupplierName(supplierComboBox.getValue());
-            stockToModify.setDepartmentName(affectationComboBox.getValue());
-            stockToModify.setObservations(observationsField.getText());
-
-            stockDAO.updateStockArrival(stockToModify);
-
-            Stage stage = (Stage) descriptionField.getScene().getWindow();
-            stage.close();
+            stockDAO.updateStockArrival(
+                    currentArrival.getId(),
+                    descriptionField.getText(),
+                    datePicker.getValue(),
+                    purchaseOrderField.getText(),
+                    supplierComboBox.getValue(),
+                    affectationComboBox.getValue(),
+                    observationsField.getText()
+            );
+            closeWindow();
         } catch (SQLException e) {
-            showAlert("Erreur de Base de Données", "Impossible de mettre à jour l'article : " + e.getMessage());
+            new Alert(Alert.AlertType.ERROR, "Erreur lors de la mise à jour : " + e.getMessage()).showAndWait();
             e.printStackTrace();
         }
     }
 
     @FXML
     private void handleCancel() {
-        Stage stage = (Stage) descriptionField.getScene().getWindow();
-        stage.close();
+        closeWindow();
     }
 
-    private void showAlert(String title, String message) {
-        new Alert(Alert.AlertType.ERROR, message).showAndWait();
+    private void closeWindow() {
+        ((Stage) descriptionField.getScene().getWindow()).close();
     }
 }

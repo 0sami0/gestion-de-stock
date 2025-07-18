@@ -3,20 +3,24 @@ package com.fsr.gestion_de_stock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.*;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class StockDAO {
     private static final Logger log = LoggerFactory.getLogger(StockDAO.class);
+
+// In StockDAO.java
 
     public List<StockItemView> getAllStockForView() {
         String sql = "SELECT " +
                 "sa.arrival_id, " +
                 "CASE " +
+                // For SQLite, use PRINTF. For MySQL, use LPAD. Let's use LPAD for MySQL.
                 "  WHEN sa.category = 'Consommable' THEN 'N/A' " +
                 "  WHEN sa.initial_quantity = 1 THEN CONCAT(sa.inventory_prefix, ' ', LPAD(sa.inventory_start_num, 7, '0'), '/', sa.inventory_year) " +
                 "  ELSE CONCAT(sa.inventory_prefix, ' ', LPAD(sa.inventory_start_num, 7, '0'), '-', LPAD((sa.inventory_start_num + sa.initial_quantity - 1), 7, '0'), '/', sa.inventory_year) " +
@@ -27,14 +31,17 @@ public class StockDAO {
                 "sa.available_quantity, " +
                 "s.name AS supplier, " +
                 "sa.observations, " +
-                "sa.purchase_order_ref " +
+                "sa.purchase_order_ref, " +
+                "sa.category " + // THIS LINE IS NOW CORRECT
                 "FROM stock_arrivals sa " +
                 "LEFT JOIN suppliers s ON sa.supplier_id = s.supplier_id " +
                 "LEFT JOIN departments d ON sa.initial_department_id = d.department_id " +
                 "ORDER BY sa.arrival_id DESC";
+
         List<StockItemView> stockList = new ArrayList<>();
         try (Statement stmt = DatabaseManager.getConnection().createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
+
             while (rs.next()) {
                 stockList.add(new StockItemView(
                         rs.getInt("arrival_id"),
@@ -45,11 +52,12 @@ public class StockDAO {
                         rs.getInt("available_quantity"),
                         rs.getString("supplier"),
                         rs.getString("observations"),
-                        rs.getString("purchase_order_ref")
+                        rs.getString("purchase_order_ref"),
+                        rs.getString("category")
                 ));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            e.printStackTrace(); // This is what printed the error to your console
         }
         return stockList;
     }
@@ -192,13 +200,10 @@ public class StockDAO {
     }
 
 
-    // In StockDAO.java
-
     public HashMap<String, String> getDispatchDetailsForDocument(int dispatchId) {
         log.info("Fetching document details for dispatch ID: {}", dispatchId);
         HashMap<String, String> details = new HashMap<>();
 
-        // This single, robust query now correctly fetches all necessary data for both cases.
         String dispatchSql = "SELECT " +
                 "d.recipient_name, d.dispatch_date, dept.name as destination, " +
                 "sa.description, sa.purchase_order_ref, s.name as supplier, d.dispatched_quantity, sa.category " +
@@ -209,12 +214,10 @@ public class StockDAO {
                 "WHERE d.dispatch_id = ?";
 
         try (Connection conn = DatabaseManager.getConnection()) {
-            // Get main dispatch info
             try(PreparedStatement pstmt = conn.prepareStatement(dispatchSql)) {
                 pstmt.setInt(1, dispatchId);
                 ResultSet rs = pstmt.executeQuery();
                 if(rs.next()) {
-                    // This data is common to both Matériel and Consommable
                     details.put("MARCHE_BC", rs.getString("purchase_order_ref") != null ? rs.getString("purchase_order_ref") : "");
                     details.put("SOCIETE", rs.getString("supplier") != null ? rs.getString("supplier") : "");
                     details.put("DESTINATION", rs.getString("destination") != null ? rs.getString("destination") : "");
@@ -223,10 +226,7 @@ public class StockDAO {
                     details.put("DESIGNATION", rs.getString("description"));
                     details.put("AFFECTATION", rs.getString("destination") != null ? rs.getString("destination") : "");
                     details.put("QUANTITE", String.valueOf(rs.getInt("dispatched_quantity")));
-
-                    // Now, handle the specific case for Matériel
                     if ("Matériel".equals(rs.getString("category"))) {
-                        // Fetch all inventory/serial numbers for this dispatch
                         String itemsSql = "SELECT inventory_number, serial_number FROM inventory_items WHERE dispatch_id = ?";
                         List<String> inventoryNumbers = new ArrayList<>();
                         List<String> serialNumbers = new ArrayList<>();
@@ -242,7 +242,6 @@ public class StockDAO {
                         details.put("N_INVENTAIRE", String.join("\n", inventoryNumbers));
                         details.put("N_SERIE", String.join("\n", serialNumbers));
                     } else {
-                        // For Consommables, these fields are blank
                         details.put("N_INVENTAIRE", "");
                         details.put("N_SERIE", "");
                     }
@@ -302,8 +301,10 @@ public class StockDAO {
         return items;
     }
 
+    // In StockDAO.java
+
     public StockArrival getArrivalById(int arrivalId) {
-        String sql = "SELECT sa.*, s.name as supplier_name, d.name as department_name FROM stock_arrivals sa LEFT JOIN suppliers s ON sa.supplier_id = s.supplier_id LEFT JOIN departments d ON sa.initial_department_id = d.department_id WHERE sa.arrival_id = ?";
+        String sql = "SELECT * FROM stock_arrivals WHERE arrival_id = ?";
         try (PreparedStatement pstmt = DatabaseManager.getConnection().prepareStatement(sql)) {
             pstmt.setInt(1, arrivalId);
             ResultSet rs = pstmt.executeQuery();
@@ -312,13 +313,13 @@ public class StockDAO {
                         rs.getInt("arrival_id"),
                         rs.getString("description"),
                         rs.getString("category"),
-                        LocalDate.parse(rs.getString("arrival_date")),
+                        rs.getDate("arrival_date").toLocalDate(),
                         rs.getString("purchase_order_ref"),
                         rs.getInt("initial_quantity"),
                         rs.getInt("available_quantity"),
-                        rs.getString("supplier_name"),
-                        rs.getString("department_name"),
-                        rs.getString("observations")
+                        rs.getString("observations"),
+                        rs.getInt("supplier_id"),
+                        rs.getInt("initial_department_id")
                 );
             }
         } catch (SQLException e) {
@@ -327,51 +328,20 @@ public class StockDAO {
         return null;
     }
 
-    public void updateStockArrival(StockArrival stock) throws SQLException {
-        long supplierId = getOrCreateId("suppliers", "name", "supplier_id", stock.getSupplierName());
-        long departmentId = getOrCreateId("departments", "name", "department_id", stock.getDepartmentName());
-        String sql = "UPDATE stock_arrivals SET description = ?, arrival_date = ?, purchase_order_ref = ?, supplier_id = ?, initial_department_id = ?, observations = ? WHERE arrival_id = ?";
-        try (PreparedStatement pstmt = DatabaseManager.getConnection().prepareStatement(sql)) {
-            pstmt.setString(1, stock.getDescription());
-            pstmt.setString(2, stock.getArrivalDate().toString());
-            pstmt.setString(3, stock.getPurchaseOrderRef());
-            pstmt.setLong(4, supplierId);
-            pstmt.setLong(5, departmentId);
-            pstmt.setString(6, stock.getObservations());
-            pstmt.setInt(7, stock.getId());
-            pstmt.executeUpdate();
-        }
-    }
+    public void updateStockArrival(int arrivalId, String description, LocalDate date, String poRef, String supplierName, String departmentName, String observations) throws SQLException {
+        long supplierId = getOrCreateId("suppliers", "name", "supplier_id", supplierName);
+        long departmentId = getOrCreateId("departments", "name", "department_id", departmentName);
 
-    public void deleteStockArrival(int arrivalId) throws SQLException {
-        StockArrival stock = getArrivalById(arrivalId);
-        if (stock == null) {
-            throw new SQLException("L'article n'existe pas.");
-        }
-        if (stock.getAvailableQuantity() < stock.getInitialQuantity()) {
-            throw new SQLException("Impossible de supprimer cet article car des unités ont déjà été sorties du stock.");
-        }
-        Connection conn = DatabaseManager.getConnection();
-        conn.setAutoCommit(false);
-        try {
-            if ("Matériel".equals(stock.getCategory())) {
-                String deleteItemsSql = "DELETE FROM inventory_items WHERE arrival_id = ?";
-                try (PreparedStatement pstmt = conn.prepareStatement(deleteItemsSql)) {
-                    pstmt.setInt(1, arrivalId);
-                    pstmt.executeUpdate();
-                }
-            }
-            String deleteArrivalSql = "DELETE FROM stock_arrivals WHERE arrival_id = ?";
-            try (PreparedStatement pstmt = conn.prepareStatement(deleteArrivalSql)) {
-                pstmt.setInt(1, arrivalId);
-                pstmt.executeUpdate();
-            }
-            conn.commit();
-        } catch (SQLException e) {
-            conn.rollback();
-            throw e;
-        } finally {
-            conn.setAutoCommit(true);
+        String sql = "UPDATE stock_arrivals SET description = ?, arrival_date = ?, purchase_order_ref = ?, supplier_id = ?, initial_department_id = ?, observations = ? WHERE arrival_id = ?";
+        try(PreparedStatement pstmt = DatabaseManager.getConnection().prepareStatement(sql)) {
+            pstmt.setString(1, description);
+            pstmt.setDate(2, Date.valueOf(date));
+            pstmt.setString(3, poRef);
+            if(supplierId != -1) pstmt.setLong(4, supplierId); else pstmt.setNull(4, Types.INTEGER);
+            if(departmentId != -1) pstmt.setLong(5, departmentId); else pstmt.setNull(5, Types.INTEGER);
+            pstmt.setString(6, observations);
+            pstmt.setInt(7, arrivalId);
+            pstmt.executeUpdate();
         }
     }
 
@@ -553,6 +523,157 @@ public class StockDAO {
         try (PreparedStatement pstmt = DatabaseManager.getConnection().prepareStatement(sql)) {
             pstmt.setString(1, name);
             pstmt.executeUpdate();
+        }
+    }
+
+    public int getTotalItemsInStock() {
+        String sql = "SELECT SUM(available_quantity) FROM stock_arrivals";
+        try (Statement stmt = DatabaseManager.getConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public int getDispatchedThisMonth() {
+        String sql = "SELECT SUM(dispatched_quantity) FROM dispatches WHERE STRFTIME('%Y-%m', dispatch_date) = STRFTIME('%Y-%m', 'now')";
+        try (Statement stmt = DatabaseManager.getConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    // For MySQL, the date function is different
+    public int getDispatchedThisMonthMySQL() {
+        String sql = "SELECT SUM(dispatched_quantity) FROM dispatches WHERE YEAR(dispatch_date) = YEAR(CURDATE()) AND MONTH(dispatch_date) = MONTH(CURDATE())";
+        try (Statement stmt = DatabaseManager.getConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public int getActiveSuppliersCount() {
+        String sql = "SELECT COUNT(*) FROM suppliers";
+        try (Statement stmt = DatabaseManager.getConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public Map<String, Integer> getCategoryDistribution() {
+        Map<String, Integer> distribution = new HashMap<>();
+        String sql = "SELECT category, SUM(available_quantity) as total FROM stock_arrivals GROUP BY category";
+        try (Statement stmt = DatabaseManager.getConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                distribution.put(rs.getString("category"), rs.getInt("total"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return distribution;
+    }
+
+    public Map<String, Integer> getTopFiveItems() {
+        Map<String, Integer> topItems = new LinkedHashMap<>(); // Use LinkedHashMap to preserve order
+        String sql = "SELECT description, SUM(available_quantity) as total FROM stock_arrivals GROUP BY description ORDER BY total DESC LIMIT 5";
+        try (Statement stmt = DatabaseManager.getConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                topItems.put(rs.getString("description"), rs.getInt("total"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return topItems;
+    }
+    public String getSupplierNameById(int supplierId) {
+        if (supplierId == 0) return null;
+        String sql = "SELECT name FROM suppliers WHERE supplier_id = ?";
+        try (PreparedStatement pstmt = DatabaseManager.getConnection().prepareStatement(sql)) {
+            pstmt.setInt(1, supplierId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("name");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    public String getDepartmentNameById(int departmentId) {
+        if (departmentId == 0) return null;
+        String sql = "SELECT name FROM departments WHERE department_id = ?";
+        try (PreparedStatement pstmt = DatabaseManager.getConnection().prepareStatement(sql)) {
+            pstmt.setInt(1, departmentId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("name");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    public void deleteStockArrival(int arrivalId) throws SQLException {
+        String checkSql = "SELECT 1 FROM inventory_items WHERE arrival_id = ? AND status = 'Dispatched' LIMIT 1";
+        try (PreparedStatement pstmt = DatabaseManager.getConnection().prepareStatement(checkSql)) {
+            pstmt.setInt(1, arrivalId);
+            if (pstmt.executeQuery().next()) {
+                throw new SQLException("Impossible de supprimer cette entrée car un ou plusieurs articles associés ont déjà été sortis.");
+            }
+        }
+
+        Connection conn = DatabaseManager.getConnection();
+        conn.setAutoCommit(false);
+        try {
+            // Must delete from child tables first due to foreign key constraints
+            String deleteDispatchesSql = "DELETE FROM dispatches WHERE arrival_id = ?";
+            try(PreparedStatement pstmt = conn.prepareStatement(deleteDispatchesSql)) {
+                pstmt.setInt(1, arrivalId);
+                pstmt.executeUpdate();
+            }
+
+            String deleteItemsSql = "DELETE FROM inventory_items WHERE arrival_id = ?";
+            try(PreparedStatement pstmt = conn.prepareStatement(deleteItemsSql)) {
+                pstmt.setInt(1, arrivalId);
+                pstmt.executeUpdate();
+            }
+
+            String deleteArrivalSql = "DELETE FROM stock_arrivals WHERE arrival_id = ?";
+            try(PreparedStatement pstmt = conn.prepareStatement(deleteArrivalSql)) {
+                pstmt.setInt(1, arrivalId);
+                pstmt.executeUpdate();
+            }
+            conn.commit();
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+        } finally {
+            conn.setAutoCommit(true);
         }
     }
 }

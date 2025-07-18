@@ -7,8 +7,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
-
 import java.io.IOException;
 
 public class LoginViewController {
@@ -18,6 +18,11 @@ public class LoginViewController {
     @FXML private Label statusLabel;
 
     private UserDAO userDAO = new UserDAO();
+    private Image appIcon;
+
+    public void setAppIcon(Image icon) {
+        this.appIcon = icon;
+    }
 
     @FXML
     private void handleLogin() throws IOException {
@@ -39,6 +44,8 @@ public class LoginViewController {
         }
     }
 
+    // In LoginViewController.java
+
     private void launchMainApplication(User user) throws IOException {
         Stage mainStage = new Stage();
         FXMLLoader loader;
@@ -50,10 +57,21 @@ public class LoginViewController {
         } else if (user.getRoles().contains("MAGAZINIER")) {
             loader = new FXMLLoader(getClass().getResource("MainView.fxml"));
             mainStage.setTitle("Gestion de Stock - Faculté des Sciences");
-            mainStage.setScene(new Scene(loader.load(), 1100, 750));
+            mainStage.setScene(new Scene(loader.load(), 1400, 800));
         } else {
-            statusLabel.setText("L'utilisateur n'a aucun rôle valide pour accéder à l'application.");
+            statusLabel.setText("L'utilisateur n'a aucun rôle valide.");
             return;
+        }
+
+        if (appIcon != null) {
+            mainStage.getIcons().add(appIcon);
+        }
+
+        Object controller = loader.getController();
+        if (controller instanceof MainViewController) {
+            ((MainViewController) controller).setCurrentUser(user);
+        } else if (controller instanceof AdminViewController) {
+            ((AdminViewController) controller).setCurrentUser(user);
         }
 
         Stage loginStage = (Stage) loginButton.getScene().getWindow();

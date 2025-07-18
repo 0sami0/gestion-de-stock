@@ -7,24 +7,6 @@ import java.util.List;
 
 public class UserDAO {
 
-    public User getUserByUsername(String username) {
-        String userSql = "SELECT * FROM users WHERE username = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(userSql)) {
-            pstmt.setString(1, username);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                int userId = rs.getInt("user_id");
-                List<String> roles = getUserRoles(conn, userId);
-                return new User(userId, rs.getString("username"), roles);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    // THIS IS THE MISSING METHOD
     public User authenticateUser(String username, String password) {
         String sql = "SELECT * FROM users WHERE username = ?";
         try (Connection conn = DatabaseManager.getConnection();
@@ -147,6 +129,33 @@ public class UserDAO {
         try (Connection conn = DatabaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, userId);
             pstmt.executeUpdate();
+        }
+    }
+
+    public boolean changeUserPassword(int userId, String oldPassword, String newPassword) throws SQLException {
+        String sqlSelect = "SELECT password_hash FROM users WHERE user_id = ?";
+        String storedHash = null;
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sqlSelect)) {
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                storedHash = rs.getString("password_hash");
+            }
+        }
+
+        if (storedHash == null || !BCrypt.checkpw(oldPassword, storedHash)) {
+            return false;
+        }
+
+        String newHashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+        String sqlUpdate = "UPDATE users SET password_hash = ? WHERE user_id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sqlUpdate)) {
+            pstmt.setString(1, newHashedPassword);
+            pstmt.setInt(2, userId);
+            pstmt.executeUpdate();
+            return true;
         }
     }
 

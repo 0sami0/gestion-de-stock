@@ -18,7 +18,7 @@ public class DocumentGenerator {
     public static File generateDocument(String templateName, HashMap<String, String> placeholders) {
         try {
             log.info("Starting document generation with template: {}", templateName);
-            log.info("Placeholders to be replaced: {}", placeholders); // We can now see the data here
+            log.info("Placeholders to be replaced: {}", placeholders);
 
             new File(OUTPUT_DIR).mkdirs();
 
@@ -32,7 +32,6 @@ public class DocumentGenerator {
             WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(templateInputStream);
             MainDocumentPart mainDocumentPart = wordMLPackage.getMainDocumentPart();
 
-            // Use the standard, reliable variable replacement.
             mainDocumentPart.variableReplace(placeholders);
             log.info("Completed variableReplace operation.");
 

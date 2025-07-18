@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
@@ -10,15 +12,18 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.fsr.gestion_de_stock.MainViewController">
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.fsr.gestion_de_stock.MainViewController">
     <children>
         <MenuBar>
             <menus>
                 <Menu mnemonicParsing="false" text="Fichier">
                     <items>
+                        <MenuItem fx:id="toggleThemeMenuItem" mnemonicParsing="false" text="Passer en Mode Sombre" />
+                        <MenuItem fx:id="changePasswordMenuItem" mnemonicParsing="false" text="Changer mon mot de passe..." />
                         <MenuItem fx:id="settingsMenuItem" mnemonicParsing="false" text="Paramètres" />
                         <MenuItem fx:id="exportMenuItem" mnemonicParsing="false" text="Exporter en CSV..." />
                         <MenuItem fx:id="quitMenuItem" mnemonicParsing="false" text="Quitter" />
@@ -33,38 +38,54 @@
         </MenuBar>
         <AnchorPane VBox.vgrow="ALWAYS">
             <children>
-                <VBox alignment="TOP_CENTER" spacing="10.0" AnchorPane.bottomAnchor="14.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="10.0">
+                <VBox spacing="10.0" AnchorPane.bottomAnchor="14.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="10.0">
                     <children>
                         <Label text="Inventaire Central">
-                            <font>
-                                <Font name="System Bold" size="24.0" />
-                            </font>
+                            <font><Font name="System Bold" size="24.0" /></font>
                         </Label>
                         <HBox alignment="CENTER_LEFT" spacing="10.0">
                             <children>
                                 <Label text="Rechercher:" />
-                                <TextField fx:id="searchField" promptText="Rechercher par description, n° inventaire, fournisseur, affectation..." HBox.hgrow="ALWAYS" />
+                                <TextField fx:id="searchField" promptText="Rechercher par description, n° inventaire..." HBox.hgrow="ALWAYS" />
                             </children>
                         </HBox>
+
+                        <!-- THIS IS THE NEW ADVANCED FILTER BAR -->
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <Label text="Filtrer par Date d'arrivée:" />
+                                <DatePicker fx:id="startDatePicker" promptText="Du" />
+                                <Label text="au" />
+                                <DatePicker fx:id="endDatePicker" promptText="Au" />
+                                <Label text="Fournisseur:" />
+                                <ComboBox fx:id="supplierFilterComboBox" prefWidth="150.0" promptText="Tous" />
+                                <Label text="Catégorie:" />
+                                <ComboBox fx:id="categoryFilterComboBox" prefWidth="150.0" promptText="Toutes" />
+                                <Button fx:id="clearFiltersButton" mnemonicParsing="false" text="Effacer les Filtres" />
+                            </children>
+                        </HBox>
+
                         <TableView fx:id="stockTableView" VBox.vgrow="ALWAYS">
                             <columns>
                                 <TableColumn fx:id="inventoryNumberCol" prefWidth="170.0" text="N° d'Inventaire" />
                                 <TableColumn fx:id="purchaseOrderCol" prefWidth="120.0" text="Marché/BC" />
-                                <TableColumn fx:id="descriptionCol" prefWidth="280.0" text="Description" />
-                                <TableColumn fx:id="affectationCol" prefWidth="150.0" text="Affectation" />
+                                <TableColumn fx:id="descriptionCol" prefWidth="199.0" text="Description" />
+                                <TableColumn fx:id="affectationCol" prefWidth="167.0" text="Structure Destinataire" />
                                 <TableColumn fx:id="dateCol" prefWidth="100.0" text="Date Dépôt" />
-                                <TableColumn fx:id="quantityCol" prefWidth="75.0" text="Quantité Restante" />
-                                <TableColumn fx:id="supplierCol" prefWidth="150.0" text="Fournisseur" />
-                                <TableColumn fx:id="observationsCol" prefWidth="200.0" text="Observations" />
-                                <TableColumn fx:id="actionsCol" prefWidth="150.0" text="Opérations" />
+                                <TableColumn fx:id="quantityCol" prefWidth="111.0" text="Quantité" />
+                                <TableColumn fx:id="supplierCol" prefWidth="112.0" text="Fournisseur" />
+                                <TableColumn fx:id="observationsCol" prefWidth="165.0" text="Demandeur" />
+                                <TableColumn fx:id="operationsCol" prefWidth="221.0" text="Opérations" />
                             </columns>
                         </TableView>
-                        <AnchorPane>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
                             <children>
-                                <Button fx:id="addStockButton" mnemonicParsing="false" text="Ajouter un Matériel/Consommable" AnchorPane.leftAnchor="0.0" />
-                                <Button fx:id="dispatchItemButton" layoutX="260.0" mnemonicParsing="false" text="Sortir un Article du Stock" AnchorPane.leftAnchor="260.0" />
+                                <Button fx:id="addStockButton" mnemonicParsing="false" text="Ajouter un Article" />
+                                <Button fx:id="dispatchItemButton" mnemonicParsing="false" text="Sortir un Article" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Button fx:id="dashboardButton" mnemonicParsing="false" text="Tableau de Bord" />
                             </children>
-                        </AnchorPane>
+                        </HBox>
                     </children>
                 </VBox>
             </children>

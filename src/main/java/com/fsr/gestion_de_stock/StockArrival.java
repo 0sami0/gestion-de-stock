@@ -3,39 +3,20 @@ package com.fsr.gestion_de_stock;
 import java.time.LocalDate;
 
 public class StockArrival {
-    private int id;
-    private String description;
-    private String category;
-    private LocalDate arrivalDate;
-    private String purchaseOrderRef;
-    private int initialQuantity;
-    private int availableQuantity;
-    private String supplierName;
-    private String departmentName;
-    private String observations;
+    private final int id;
+    private final String description;
+    private final String category;
+    private final LocalDate arrivalDate;
+    private final String purchaseOrderRef;
+    private final int initialQuantity;
+    private final int availableQuantity;
+    private final String observations;
+    private final int supplierId;
+    private final int initialDepartmentId;
 
-    // Getters
-    public int getId() { return id; }
-    public String getDescription() { return description; }
-    public String getCategory() { return category; }
-    public LocalDate getArrivalDate() { return arrivalDate; }
-    public String getPurchaseOrderRef() { return purchaseOrderRef; }
-    public int getInitialQuantity() { return initialQuantity; }
-    public int getAvailableQuantity() { return availableQuantity; }
-    public String getSupplierName() { return supplierName; }
-    public String getDepartmentName() { return departmentName; }
-    public String getObservations() { return observations; }
-
-    // Setters for modifiable fields
-    public void setDescription(String description) { this.description = description; }
-    public void setArrivalDate(LocalDate arrivalDate) { this.arrivalDate = arrivalDate; }
-    public void setPurchaseOrderRef(String purchaseOrderRef) { this.purchaseOrderRef = purchaseOrderRef; }
-    public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
-    public void setDepartmentName(String departmentName) { this.departmentName = departmentName; }
-    public void setObservations(String observations) { this.observations = observations; }
-
-    // Constructor
-    public StockArrival(int id, String description, String category, LocalDate arrivalDate, String purchaseOrderRef, int initialQuantity, int availableQuantity, String supplierName, String departmentName, String observations) {
+    public StockArrival(int id, String description, String category, LocalDate arrivalDate,
+                        String purchaseOrderRef, int initialQuantity, int availableQuantity,
+                        String observations, int supplierId, int initialDepartmentId) {
         this.id = id;
         this.description = description;
         this.category = category;
@@ -43,8 +24,19 @@ public class StockArrival {
         this.purchaseOrderRef = purchaseOrderRef;
         this.initialQuantity = initialQuantity;
         this.availableQuantity = availableQuantity;
-        this.supplierName = supplierName;
-        this.departmentName = departmentName;
         this.observations = observations;
+        this.supplierId = supplierId;
+        this.initialDepartmentId = initialDepartmentId;
     }
+
+    public int getId() { return id; }
+    public String getDescription() { return description; }
+    public String getCategory() { return category; }
+    public LocalDate getArrivalDate() { return arrivalDate; }
+    public String getPurchaseOrderRef() { return purchaseOrderRef; }
+    public int getInitialQuantity() { return initialQuantity; }
+    public int getAvailableQuantity() { return availableQuantity; }
+    public String getObservations() { return observations; }
+    public int getSupplierId() { return supplierId; }
+    public int getInitialDepartmentId() { return initialDepartmentId; }
 }
